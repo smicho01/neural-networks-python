@@ -2,7 +2,9 @@
 
 A Python implementation of the perceptron algorithm - the fundamental building block of neural networks and deep learning.
 
-> 📊 **Viewing Diagrams**: This README contains ASCII diagrams optimized for PyCharm. For interactive Mermaid diagrams, see the [diagrams/](./diagrams/) directory or view on GitHub.
+> **Learning Resources**: New to neural networks? Check out the [Neural Networks Course](../some_reading/README.md) for structured lessons from basics to GPT-3!
+
+> **Viewing Diagrams**: This README contains ASCII diagrams optimized for PyCharm. For interactive Mermaid diagrams, see the [diagrams/](./diagrams/) directory or view on GitHub.
 
 ## Table of Contents
 - [What is a Perceptron?](#what-is-a-perceptron)
@@ -44,7 +46,7 @@ The perceptron operates in two phases:
 
 ## Architecture Diagram
 
-> 📊 **View detailed diagrams**: [diagrams/](./diagrams/) directory contains all diagrams in multiple formats
+> **View detailed diagrams**: [diagrams/](./diagrams/) directory contains all diagrams in multiple formats
 
 ### ASCII Diagram (PyCharm-friendly)
 
@@ -77,7 +79,7 @@ The perceptron operates in two phases:
 - **Activation**: Step function (outputs 0 or 1)
 - **Output (ŷ)**: Final prediction
 
-📄 [View full diagram with Mermaid version](./diagrams/perceptron-architecture.md)
+[View full diagram with Mermaid version](./diagrams/perceptron-architecture.md)
 
 ### Visual Flow
 
@@ -135,7 +137,7 @@ The perceptron operates in two phases:
         └─────────────┘
 ```
 
-📄 [View full diagram with Mermaid version](./diagrams/prediction-flow.md)
+[View full diagram with Mermaid version](./diagrams/prediction-flow.md)
 
 ## Mathematical Model
 
@@ -252,7 +254,7 @@ Where:
         └──────────────────────────────┘
 ```
 
-📄 [View full training algorithm diagram](./diagrams/training-algorithm.md)
+[View full training algorithm diagram](./diagrams/training-algorithm.md)
 
 ## Installation
 
@@ -391,7 +393,7 @@ custom_data = [
     Need curved/multiple boundaries.
 ```
 
-📄 [View detailed separability diagrams](./diagrams/linear-separability.md)
+[View detailed separability diagrams](./diagrams/linear-separability.md)
 
 **Solution**: For non-linear problems, use multi-layer perceptrons (MLPs) or neural networks, which stack multiple perceptrons in layers.
 
@@ -417,5 +419,5 @@ This is an educational implementation for learning purposes.
 
 ---
 
-**Happy Learning! 🧠✨**
+**Happy Learning!**
 
