@@ -1,0 +1,38 @@
+graph LR
+    subgraph Inputs
+        X1[Input x₁]
+        X2[Input x₂]
+        X3[Input x₃]
+        XN[Input xₙ]
+    end
+
+    subgraph Weights
+        W1[Weight w₁]
+        W2[Weight w₂]
+        W3[Weight w₃]
+        WN[Weight wₙ]
+    end
+
+    subgraph Computation
+        SUM[Σ Weighted Sum + Bias]
+        ACT[Activation Function<br/>f x ≥ 0 → 1<br/>f x < 0 → 0]
+    end
+
+    subgraph Output
+        Y[Output ŷ<br/>0 or 1]
+    end
+
+    X1 --> |×| W1
+    X2 --> |×| W2
+    X3 --> |×| W3
+    XN --> |×| WN
+
+    W1 --> SUM
+    W2 --> SUM
+    W3 --> SUM
+    WN --> SUM
+
+    BIAS[Bias b] --> SUM
+
+    SUM --> ACT
+    ACT --> Y

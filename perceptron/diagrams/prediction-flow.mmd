@@ -1,0 +1,10 @@
+flowchart TD
+    START([Start]) --> INPUT[Receive Inputs]
+    INPUT --> MULTIPLY[Multiply Each Input by Weight]
+    MULTIPLY --> SUM[Sum All Weighted Inputs]
+    SUM --> ADDBIAS[Add Bias Term]
+    ADDBIAS --> ACTIVATION{Weighted Sum ≥ 0?}
+    ACTIVATION -->|Yes| OUTPUT1[Output = 1]
+    ACTIVATION -->|No| OUTPUT0[Output = 0]
+    OUTPUT1 --> END([End])
+    OUTPUT0 --> END

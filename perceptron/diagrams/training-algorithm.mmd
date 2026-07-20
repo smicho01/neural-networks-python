@@ -1,0 +1,17 @@
+flowchart TD
+    START([Start Training]) --> INIT[Initialize Random Weights & Bias]
+    INIT --> EPOCH[For Each Epoch]
+    EPOCH --> SAMPLE[For Each Training Sample]
+    SAMPLE --> PREDICT[Make Prediction]
+    PREDICT --> ERROR[Calculate Error = Expected - Predicted]
+    ERROR --> CHECK{Error = 0?}
+    CHECK -->|No| UPDATE[Update Weights:<br/>wᵢ += η × error × xᵢ<br/>b += η × error]
+    CHECK -->|Yes| NEXT[Next Sample]
+    UPDATE --> NEXT
+    NEXT --> MORESAMPLE{More Samples?}
+    MORESAMPLE -->|Yes| SAMPLE
+    MORESAMPLE -->|No| CHECKERR{Total Errors = 0?}
+    CHECKERR -->|Yes| DONE([Training Complete!])
+    CHECKERR -->|No| MOREEPOCH{More Epochs?}
+    MOREEPOCH -->|Yes| EPOCH
+    MOREEPOCH -->|No| DONE
