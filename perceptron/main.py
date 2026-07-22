@@ -16,10 +16,8 @@ def calculate_accuracy(perceptron: Perceptron, test_data: list[TrainingExample])
     Args:
         perceptron: A trained perceptron.
         test_data: Examples the perceptron was not trained on.
-
     Returns:
         Accuracy as a percentage between 0.0 and 100.0.
-
     Raises:
         ValueError: If test_data is empty.
     """
@@ -48,7 +46,6 @@ def run_example(
         test_file: Path to the test CSV.
         epochs: Maximum number of passes through the training data.
         learning_rate: Step size for weight updates.
-
     Returns:
         Accuracy on the test set, so callers can summarise across examples.
     """
@@ -91,11 +88,17 @@ def main() -> None:
             test_file="data/and_gate_test.csv",
             epochs=50,
         ),
-        "Threshold Sum": run_example(
-            title="Example 3: Threshold sum with 3 inputs",
+        "Sum of 3 Inputs": run_example(
+            title="Example 3: Sum of 3 Inputs",
             train_file="data/threshold_sum_train.csv",
             test_file="data/threshold_sum_test.csv",
             epochs=20,
+        ),
+        "Sum of 10 Inputs": run_example(
+            title="Example 4: Sum of 10 Inputs",
+            train_file="data/10_inputs_train.csv",
+            test_file="data/10_inputs_test.csv",
+            epochs=100,
         ),
     }
 
