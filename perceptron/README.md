@@ -12,6 +12,7 @@ A Python implementation of the perceptron algorithm - the fundamental building b
 - [Architecture Diagram](#architecture-diagram)
 - [Mathematical Model](#mathematical-model)
 - [The Learning Algorithm](#the-learning-algorithm)
+- [Where the Learning Happens](#where-the-learning-happens)
 - [Installation](#installation)
 - [Project Structure](#project-structure)
 - [Usage](#usage)
@@ -271,6 +272,105 @@ permanently fixed at `1.0`.
 errors, since every subsequent update would be multiplied by zero and change
 nothing.
 
+## Where the Learning Happens
+
+Everything above is illustration. This is the code, from `perceptron.py`:
+
+```python
+for inputs, expected_output in training_data:
+    predicted_output = self.predict(inputs)
+    error = expected_output - predicted_output
+
+    self.weights = [
+        weight + self.learning_rate * error * input_value
+        for weight, input_value in zip(self.weights, inputs)
+    ]
+    self.bias += self.learning_rate * error
+
+    total_errors += abs(error)
+```
+
+Five lines. Everything the perceptron knows lives in `self.weights` and
+`self.bias`, and this is the only place either one changes.
+
+### Reading the update rule
+
+```python
+weight + self.learning_rate * error * input_value
+```
+
+Three factors, each doing a different job:
+
+| Factor | Role |
+|---|---|
+| `error` | **Direction.** `+1` means the output was too low, so increase. `-1` means too high, so decrease. `0` means correct, so the whole product is zero and nothing moves. |
+| `input_value` | **Blame.** An input of `0.0` contributed nothing to the wrong answer, so its weight is left alone. An input of `1.0` contributed fully and takes the full correction. |
+| `learning_rate` | **Step size.** Too large and the weights overshoot and oscillate. Too small and convergence crawls. |
+
+There is no `if error != 0` anywhere, and none is needed. A correct prediction
+multiplies the update by zero.
+
+### Why the bias update looks different
+
+```python
+self.bias += self.learning_rate * error
+```
+
+No `input_value`. Bias behaves like a weight on an input permanently fixed at
+`1.0`, so `learning_rate * error * 1.0` simplifies to `learning_rate * error`.
+
+### Why `abs(error)`
+
+```python
+total_errors += abs(error)
+```
+
+The count is of mistakes, not of their direction. Without `abs`, a `+1` and a
+`-1` in the same epoch would cancel out and two wrong predictions would look
+like a perfect pass.
+
+### What each parameter controls geometrically
+
+The decision boundary is the line (or plane) where `w₁x₁ + w₂x₂ + ... + b = 0`.
+
+- **Weights** set its angle. Changing them rotates the boundary.
+- **Bias** sets its distance from the origin. Changing it slides the boundary
+  without turning it.
+
+Training is those two adjustments repeated until every training example falls on
+the correct side.
+
+### Watching it happen
+
+Each epoch prints the current parameters. From a real AND gate run:
+
+```
+Epoch 01, errors: 5, weights: [0.538, -0.535], bias: 0.26
+Epoch 05, errors: 2, weights: [0.508, -0.125], bias: -0.04
+Epoch 09, errors: 1, weights: [0.298,  0.094], bias: -0.24
+Epoch 13, errors: 0, weights: [0.278,  0.184], bias: -0.34
+```
+
+The second weight starts negative and has to cross zero before the boundary
+points the right way. That crossing accounts for most of the 13 epochs. A luckier
+random start would have finished in three or four.
+
+### A note for anyone continuing into deep learning
+
+This update rule does **not** generalise. It was derived geometrically by
+Rosenblatt in 1958, before backpropagation existed, and it works only because the
+step function's output is binary. Every network after this one trains by gradient
+descent, where the update includes the derivative of the activation function:
+
+```
+gradient descent:  w ← w + η × error × f'(z) × x
+perceptron rule:   w ← w + η × error × x
+```
+
+The missing `f'(z)` is not an omission, it is the reason the perceptron is a
+special case. What does carry forward is the forward pass and the epoch loop
+structure, not the arithmetic above.
+
 ## Installation
 
 No external dependencies, just the standard library (`random`, `csv`, `pathlib`).
@@ -292,14 +392,16 @@ perceptron/
 ├── README.md          ← This file
 ├── perceptron.py      ← Perceptron class: predict and train
 ├── data_loader.py     ← Reads datasets from CSV files
-├── main.py            ← Runs the three examples
+├── main.py            ← Runs the examples
 ├── data/              ← Datasets, one train/test pair per example
 │   ├── or_gate_train.csv
 │   ├── or_gate_test.csv
 │   ├── and_gate_train.csv
 │   ├── and_gate_test.csv
 │   ├── threshold_sum_train.csv
-│   └── threshold_sum_test.csv
+│   ├── threshold_sum_test.csv
+│   ├── 10_inputs_train.csv
+│   └── 10_inputs_test.csv
 └── diagrams/          ← Visual diagrams
 ```
 
@@ -322,7 +424,8 @@ Summary
 ============================================================
   OR Gate              100.00%
   AND Gate             100.00%
-  Threshold Sum        100.00%
+  Sum of 3 Inputs      100.00%
+  Sum of 10 Inputs     100.00%
 ```
 
 Epoch counts vary between runs because weights start at random values.
@@ -347,7 +450,7 @@ print(f"Prediction: {prediction}")  # Output: 1
 ```
 
 `get_input_size` reads the feature count from the data, so the same code works
-for 2-input and 3-input datasets without changes.
+for 2-input, 3-input, and 10-input datasets without changes.
 
 ### Building Data In Memory
 
@@ -394,7 +497,7 @@ Write the two CSV files, then add one call in `main()`:
 
 ```python
 "My Gate": run_example(
-    title="Example 4: My Gate",
+    title="Example 5: My Gate",
     train_file="data/my_gate_train.csv",
     test_file="data/my_gate_test.csv",
     epochs=50,
@@ -424,6 +527,16 @@ The test set contains examples it never sees during training, so accuracy on it
 measures generalisation rather than memorisation. A model scoring 100% on its
 training data and 60% on unseen data has memorised, not learned.
 
+### Leaving a Margin
+
+When writing a dataset, keep examples away from the boundary itself. If the rule
+is `sum >= 5.0`, avoid rows summing to 4.99 or 5.01. Points sitting exactly on
+the boundary force the perceptron to find one of very few valid solutions, and
+whether it succeeds depends on where random initialisation happened to leave it.
+
+The 10-input dataset was generated with a deliberate gap: no row sums to within
+0.4 of the threshold. It converges reliably as a result.
+
 ## Examples
 
 ### Example 1: OR Logic Gate
@@ -444,7 +557,7 @@ x1,x2,label
 ```
 
 Labels follow `x1 + x2 >= ~0.4`, a straight line, so the perceptron converges.
-Typically 7 epochs.
+Typically 2 to 7 epochs.
 
 ### Example 2: AND Logic Gate
 
@@ -473,7 +586,7 @@ and on continuous inputs it stays linearly separable. Typically 13 epochs.
 See [Troubleshooting](#troubleshooting) for why the more intuitive rule "both
 inputs at least 0.5" would break this example.
 
-### Example 3: Threshold Sum (3 inputs)
+### Example 3: Sum of 3 Inputs
 
 `data/threshold_sum_train.csv`
 ```csv
@@ -494,9 +607,30 @@ x1,x2,x3,label
 0.9,0.8,0.1,1
 ```
 
-The rule is `sum(inputs) > 1.5`, which in three dimensions is a plane. This is
-the easiest of the three because the target rule matches exactly what the
-architecture can express. Typically 4 epochs.
+The rule is `sum(inputs) > 1.5`, which in three dimensions is a plane. Not a
+logic gate, just a cutoff on a sum, included to show the perceptron is not
+limited to two inputs. Typically 4 to 11 epochs.
+
+**This example does not always reach 100%.** Both the training and test sets
+contain rows summing to exactly 1.5, the boundary value. With almost no margin,
+whether the final plane classifies them correctly depends on random
+initialisation. Runs alternate between 87.50% and 100%. That is not a bug, it is
+the margin problem made visible, and it is worth showing rather than hiding.
+
+### Example 4: Sum of 10 Inputs
+
+`data/10_inputs_train.csv` (40 rows, 20 of each class)
+
+The rule is `x1 + x2 + ... + x10 >= 5.0`. Ten features between 0.0 and 1.0, so
+sums range from 0 to 10 and the cutoff sits in the middle.
+
+Generated with a 0.4 margin around the threshold, so label-0 rows sum between
+2.31 and 4.54 while label-1 rows sum between 5.48 and 6.86. That gap is why this
+example converges reliably where Example 3 does not.
+
+Needs more epochs than the smaller examples, typically 16 to 26, because ten
+weights take longer to arrange than three. The parameter count is 11: ten weights
+plus one bias.
 
 ## Limitations
 
@@ -552,7 +686,8 @@ architecture can express. Typically 4 epochs.
 
 Even on separable data, the perceptron stops at the *first* line that classifies
 everything correctly, not the best one. An SVM by contrast maximises the margin
-between classes, which usually generalises better to unseen data.
+between classes, which usually generalises better to unseen data. Example 3 shows
+the consequence directly.
 
 ## Troubleshooting
 
@@ -596,9 +731,20 @@ separable data, not steady improvement.
 
 ### Accuracy differs between runs
 
-Weights start random, so the number of epochs to converge varies. Final accuracy
-should not vary on separable data. If it does, the dataset is probably not
-separable.
+Weights start random, so the number of epochs to converge varies.
+
+If final *accuracy* also varies, the dataset has examples sitting too close to
+the boundary. Training stops at the first solution that fits the training rows,
+and when the margin is thin, some of those solutions misclassify nearby unseen
+points while others do not. Example 3 does this. The fix is a wider gap between
+the classes, as in Example 4.
+
+### Training reaches zero errors but test accuracy is poor
+
+Zero training error means the boundary separates the *training* rows, nothing
+more. If unseen data lands on the wrong side, the boundary is probably sitting
+right up against one class instead of running between them. Add a margin, or add
+more examples near the boundary on both sides.
 
 ## Key Concepts
 
@@ -612,12 +758,39 @@ separable.
 | **Decision Boundary** | The line/hyperplane that separates the two classes |
 | **Training Set** | Examples the model learns from |
 | **Test Set** | Held-out examples used to measure generalisation |
+| **Margin** | Distance between the boundary and the nearest examples |
+
+## Exercises
+
+1. Write `data/nand_gate_train.csv` and `data/nand_gate_test.csv`, then train on
+   them. NAND is separable, so this should converge.
+2. Build a dataset for "output 1 if x₁ > 0.5, else 0", ignoring x₂ entirely. What
+   should the trained weight for x₂ look like?
+3. Run the same example with learning rates of 0.01, 0.1, and 1.0. Compare epoch
+   counts and watch for oscillation at the high end.
+4. Write an XOR dataset and watch training fail:
+   ```csv
+   x1,x2,label
+   0.0,0.0,0
+   0.0,1.0,1
+   1.0,0.0,1
+   1.0,1.0,0
+   ```
+   The error count will never reach zero and accuracy tops out at 75%. No number
+   of epochs fixes it.
+5. Take the 10-input dataset and relabel it with one feature weighted heavily,
+   for example `2·x1 + x2 + ... + x10 >= 5.5`. After training, check whether the
+   first weight came out noticeably larger than the rest.
 
 ## Next Steps
 
 Replacing the step activation with a sigmoid makes the output differentiable,
 which opens the door to gradient descent and backpropagation, and from there to
 multi-layer networks that can handle XOR.
+
+Note that swapping the activation alone is not enough. The training method has to
+change with it, since the perceptron rule assumes a binary output. See the note
+at the end of [Where the Learning Happens](#where-the-learning-happens).
 
 ## References
 
