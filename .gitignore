@@ -9,6 +9,7 @@ venv/
 env/
 ENV/
 
+
 # Environment variables and secrets
 .env
 .env.*
@@ -45,3 +46,4 @@ htmlcov/
 # PyCharm / IntelliJ IDEA
 .idea/
 *.iml
+/playground/
