@@ -32,6 +32,7 @@ print("=" * 60)
 #   - list[float]: input features (e.g., [0.0, 1.0])
 #   - int: expected output (0 or 1)
 # Extended training data with more variations including intermediate values
+# IMPORTANT: Added boundary cases with very small values to improve accuracy
 or_gate_training_data = [
     ([0.0, 0.0], 0),  # 0 OR 0 = 0
     ([0.0, 1.0], 1),  # 0 OR 1 = 1
@@ -41,6 +42,8 @@ or_gate_training_data = [
     ([0.1, 0.8], 1),  # Near 0 OR Near 1 = 1
     ([0.9, 0.1], 1),  # Near 1 OR Near 0 = 1
     ([0.2, 0.3], 1),  # Small values OR = 1 (if either > threshold)
+    ([0.1, 0.1], 0),  # Very small values = 0 (critical boundary case)
+    ([0.05, 0.05], 0), # Reinforcing low boundary
 ]
 
 # Separate test data (unseen during training)
@@ -57,7 +60,7 @@ or_gate_test_data = [
 or_perceptron = Perceptron(input_size=2, learning_rate=0.1)
 
 # Train the perceptron
-or_perceptron.train(training_data=or_gate_training_data, epochs=10)
+or_perceptron.train(training_data=or_gate_training_data, epochs=40)
 
 # Test the trained perceptron on NEW data
 print("\nTesting OR gate on unseen data:")
@@ -79,17 +82,27 @@ print("\n" + "=" * 60)
 print("Example 2: AND Gate")
 print("=" * 60)
 
-# The AND gate returns 1 only if both inputs are 1
-# Extended training data with variations
+# The AND gate returns 1 only if BOTH inputs are >= 0.5
+# This creates a clear, learnable threshold for the perceptron
+# Rule: output = 1 if (input1 >= 0.5 AND input2 >= 0.5), else 0
 and_gate_training_data = [
-    ([0.0, 0.0], 0),  # 0 AND 0 = 0
-    ([0.0, 1.0], 0),  # 0 AND 1 = 0
-    ([1.0, 0.0], 0),  # 1 AND 0 = 0
-    ([1.0, 1.0], 1),  # 1 AND 1 = 1
-    ([0.1, 0.9], 0),  # Near 0 AND Near 1 = 0
-    ([0.9, 0.2], 0),  # Near 1 AND Near 0 = 0
-    ([0.8, 0.9], 1),  # High AND High = 1
-    ([0.0, 0.0], 0),  # Duplicate for reinforcement
+    # Clear negative examples (at least one input < 0.5)
+    ([0.0, 0.0], 0),  # Both low
+    ([0.0, 1.0], 0),  # One low
+    ([1.0, 0.0], 0),  # One low
+    ([0.1, 0.9], 0),  # One low
+    ([0.9, 0.2], 0),  # One low
+    ([0.4, 0.9], 0),  # One below threshold
+    ([0.3, 0.9], 0),  # One below threshold
+    ([0.2, 0.8], 0),  # One below threshold
+    # Clear positive examples (both inputs >= 0.5)
+    ([1.0, 1.0], 1),  # Both high
+    ([0.8, 0.9], 1),  # Both high
+    ([0.7, 0.8], 1),  # Both above threshold
+    ([0.6, 0.6], 1),  # Both above threshold
+    ([0.6, 0.7], 1),  # Both above threshold
+    ([0.5, 0.5], 1),  # Boundary case (both exactly at threshold)
+    ([0.5, 0.9], 1),  # Both above/at threshold
 ]
 
 # Separate test data
@@ -104,7 +117,7 @@ and_gate_test_data = [
 ]
 
 and_perceptron = Perceptron(input_size=2, learning_rate=0.1)
-and_perceptron.train(training_data=and_gate_training_data, epochs=10)
+and_perceptron.train(training_data=and_gate_training_data, epochs=50)
 
 print("\nTesting AND gate on unseen data:")
 for inputs, expected in and_gate_test_data:

@@ -136,5 +136,5 @@ class Perceptron:
 
             # If no errors occurred, the data is perfectly classified - stop training
             if total_errors == 0:
-                print("Training completed.")
+                print("Training completed. total_errors = 0")
                 break
