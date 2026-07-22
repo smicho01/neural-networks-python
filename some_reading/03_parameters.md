@@ -48,16 +48,29 @@ A common source of confusion for beginners:
 class Perceptron:
     def __init__(self, input_size):
         # PARAMETERS - stored in model
-        self.weights = [random(), random()]  # 2 parameters
-        self.bias = random()                  # 1 parameter
-        # Total: 3 parameters
-    
+        self.weights = [random.uniform(-1.0, 1.0) for _ in range(input_size)]
+        self.bias = random.uniform(-1.0, 1.0)
+        # For input_size=2: 2 weights + 1 bias = 3 parameters
+
     def predict(self, inputs):
-        # INPUTS - provided at runtime
-        # inputs = [0.5, 0.8]  ← temporary data
-        weighted_sum = sum(w * x for w, x in zip(self.weights, inputs))
+        # INPUTS - provided at runtime, e.g. [0.5, 0.8]
+        weighted_sum = sum(
+            input_value * weight
+            for input_value, weight in zip(inputs, self.weights)
+        )
         return 1 if weighted_sum + self.bias >= 0 else 0
 ```
+
+Note that `input_size` is a **hyperparameter**, not a parameter. It determines
+how many parameters exist but is not itself learned. In the accompanying code it
+comes from the shape of the CSV file:
+
+```python
+training_data = load_dataset("data/or_gate_train.csv")
+perceptron = Perceptron(input_size=get_input_size(training_data))
+```
+
+A 2-column feature set gives 3 parameters, a 3-column one gives 4.
 
 **Usage:**
 ```python
@@ -498,4 +511,3 @@ Proceed to **[Lesson 4: Understanding Bias](04_bias.md)** to learn about the spe
 - Modify the perceptron code to track parameter values
 - Visualize how parameters change during training
 - Experiment with networks of different sizes
-

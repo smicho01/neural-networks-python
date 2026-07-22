@@ -25,7 +25,7 @@ Part 1: FOUNDATIONS
    ├─ Training algorithm
    └─ Hands-on: OR gate, AND gate
    
-   PRACTICE: Run /perceptron/main.py
+   PRACTICE: Run /perceptron/main.py (datasets load from /perceptron/data/*.csv)
 
 
 Part 2: CORE CONCEPTS
@@ -96,7 +96,7 @@ Mark your progress as you complete each lesson:
 **Hands-On:**
 - [ ] Run perceptron OR gate example
 - [ ] Run perceptron AND gate example
-- [ ] Modify perceptron for custom task
+- [ ] Add your own dataset as a CSV pair and run it
 
 ---
 
@@ -191,9 +191,33 @@ neural-networks/
 └── perceptron/            ← Hands-on implementation
     ├── README.md          ← Usage guide
     ├── perceptron.py      ← Perceptron class
-    ├── main.py            ← Examples (OR, AND gates)
+    ├── data_loader.py     ← Reads datasets from CSV
+    ├── main.py            ← Examples (OR, AND, threshold sum)
+    ├── data/              ← Training and test datasets
+    │   ├── or_gate_train.csv
+    │   ├── or_gate_test.csv
+    │   ├── and_gate_train.csv
+    │   ├── and_gate_test.csv
+    │   ├── threshold_sum_train.csv
+    │   └── threshold_sum_test.csv
     └── diagrams/          ← Visual diagrams
 ```
+
+### Dataset Format
+
+Every CSV has a header row. All columns except the last are input features,
+the last column is the label:
+
+```csv
+x1,x2,label
+0.0,0.0,0
+0.0,1.0,1
+1.0,0.0,1
+1.0,1.0,1
+```
+
+The loader infers the number of features from the header, so the same code
+handles 2-input and 3-input datasets without changes.
 
 ---
 
@@ -336,4 +360,3 @@ Where η = learning rate
 - [Course Index](README.md)
 - [Start Learning](01_introduction.md)
 - [Perceptron Code](../perceptron/README.md)
-

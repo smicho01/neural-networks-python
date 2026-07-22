@@ -46,10 +46,8 @@ class Perceptron:
         This is a simple threshold function that outputs:
         - 1 if weighted_sum >= 0
         - 0 if weighted_sum < 0
-
         Args:
             weighted_sum: The weighted sum of inputs plus bias
-
         Returns:
             Binary output (0 or 1)
         """
@@ -61,10 +59,8 @@ class Perceptron:
 
         This method combines the weighted sum calculation and activation
         to produce a final binary classification.
-
         Args:
             inputs: List of input feature values
-
         Returns:
             Predicted class (0 or 1)
         """
@@ -112,12 +108,10 @@ class Perceptron:
 
                 # Update each weight using the perceptron learning rule
                 # Only updates when error != 0 (i.e., when prediction is wrong)
-                for index in range(len(self.weights)):
-                    self.weights[index] += (
-                        self.learning_rate
-                        * error
-                        * inputs[index]
-                    )
+                self.weights = [
+                    weight + self.learning_rate * error * input_value
+                    for weight, input_value in zip(self.weights, inputs)
+                ]
 
                 # Update the bias term
                 # Bias acts like a weight for an input that's always 1

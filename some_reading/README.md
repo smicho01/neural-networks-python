@@ -72,8 +72,21 @@ This course takes you from the simplest neural network (a single perceptron) to 
 
 The `/perceptron` directory contains a complete implementation of a perceptron:
 - `perceptron.py` - Perceptron class implementation
-- `main.py` - Examples: OR gate, AND gate, and custom classifications
+- `data_loader.py` - Loads training and test sets from CSV files
+- `main.py` - Examples: OR gate, AND gate, and threshold-sum classification
+- `data/` - Datasets as CSV files, one training and one test file per example
 - `README.md` - Usage guide
+
+Datasets live outside the code, so you can change what the perceptron learns by
+editing a CSV rather than editing Python. Each CSV has a header row where all
+columns except the last are input features and the last column is the label.
+
+Run it with:
+
+```bash
+cd perceptron
+python main.py
+```
 
 **Recommended:** After completing Lesson 2, run the perceptron code to see it in action.
 
@@ -142,6 +155,7 @@ After completing this course, you will understand:
 - Deep dive into transformer architecture
 
 **Recommended Next Steps:**
+- Write your own CSV datasets and see which ones the perceptron can learn
 - Build a neural network from scratch for MNIST digit recognition
 - Study the math behind backpropagation
 - Learn about different activation functions
@@ -163,4 +177,3 @@ After completing this course, you will understand:
 **Begin with Lesson 1:** [Introduction to Neural Networks](01_introduction.md)
 
 Or jump directly to the [Perceptron Implementation](../perceptron/README.md) if you prefer learning by doing.
-

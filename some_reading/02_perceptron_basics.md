@@ -295,98 +295,168 @@ This limitation led to "AI winter" in the 1970s. Multi-layer networks solve this
 
 ```python
 class Perceptron:
-    def __init__(self, input_size, learning_rate=0.1):
-        # Initialize random weights and bias
-        self.weights = [random() for _ in range(input_size)]
-        self.bias = random()
+    def __init__(self, input_size: int, learning_rate: float = 0.1):
+        self.weights = [random.uniform(-1.0, 1.0) for _ in range(input_size)]
+        self.bias = random.uniform(-1.0, 1.0)
         self.learning_rate = learning_rate
-    
-    def predict(self, inputs):
-        # Calculate weighted sum
-        weighted_sum = sum(w * x for w, x in zip(self.weights, inputs))
-        weighted_sum += self.bias
-        
-        # Apply activation
-        return 1 if weighted_sum >= 0 else 0
-    
-    def train(self, training_data, epochs):
+
+    def predict(self, inputs: list[float]) -> int:
+        weighted_sum = sum(
+            input_value * weight
+            for input_value, weight in zip(inputs, self.weights)
+        )
+        return 1 if weighted_sum + self.bias >= 0 else 0
+
+    def train(self, training_data: list[tuple[list[float], int]], epochs: int) -> None:
         for epoch in range(epochs):
-            for inputs, expected in training_data:
-                # Predict
-                predicted = self.predict(inputs)
-                
-                # Calculate error
-                error = expected - predicted
-                
-                # Update weights and bias
-                for i in range(len(self.weights)):
-                    self.weights[i] += self.learning_rate * error * inputs[i]
+            total_errors = 0
+
+            for inputs, expected_output in training_data:
+                error = expected_output - self.predict(inputs)
+
+                self.weights = [
+                    weight + self.learning_rate * error * input_value
+                    for weight, input_value in zip(self.weights, inputs)
+                ]
                 self.bias += self.learning_rate * error
+                total_errors += abs(error)
+
+            if total_errors == 0:
+                break
 ```
+
+Two details worth noticing. The weight update multiplies by `error`, which is
+`-1`, `0`, or `1`, so a correct prediction leaves every parameter untouched
+without needing an explicit `if`. And training stops early once an epoch passes
+with zero errors, since no further update could change anything.
+
+### Loading Data from CSV
+
+Datasets live in CSV files rather than in the Python source, so changing what
+the perceptron learns means editing data, not code:
+
+```python
+def load_dataset(file_path: str | Path) -> list[tuple[list[float], int]]:
+    path = Path(file_path)
+
+    with path.open(newline="", encoding="utf-8") as csv_file:
+        reader = csv.reader(csv_file)
+        header = next(reader)
+
+        dataset = []
+        for row in reader:
+            *feature_strings, label_string = row
+            features = [float(value) for value in feature_strings]
+            dataset.append((features, int(label_string)))
+
+    return dataset
+```
+
+The starred unpacking `*feature_strings, label_string = row` takes every column
+except the last as a feature and the last as the label. That is why the same
+loader handles a 2-input gate and a 3-input classification with no changes.
 
 ---
 
 ## Practical Examples
 
+Each example is a pair of CSV files: one for training, one for testing on data
+the model never saw.
+
 ### Example 1: OR Gate
 
+`data/or_gate_train.csv`
+```csv
+x1,x2,label
+0.0,0.0,0
+0.0,1.0,1
+1.0,0.0,1
+1.0,1.0,1
+0.1,0.8,1
+0.9,0.1,1
+0.2,0.3,1
+0.1,0.1,0
+0.05,0.05,0
+0.15,0.1,0
 ```
-Training Data:
-┌───────┬───────┬──────────┐
-│  x₁   │  x₂   │  Output  │
-├───────┼───────┼──────────┤
-│  0    │  0    │    0     │
-│  0    │  1    │    1     │
-│  1    │  0    │    1     │
-│  1    │  1    │    1     │
-└───────┴───────┴──────────┘
 
-After Training:
-Weights: [0.9, 0.9]
-Bias: -0.4
-
-Test: All examples classified correctly ✓
-```
+Labels follow the rule `x1 + x2 >= ~0.4`, which is a straight line, so the
+perceptron converges. Typical result: 7 epochs, 100% on the test set.
 
 ### Example 2: AND Gate
 
+`data/and_gate_train.csv`
+```csv
+x1,x2,label
+0.0,0.0,0
+0.0,1.0,0
+1.0,0.0,0
+0.2,0.8,0
+0.4,0.9,0
+0.5,0.8,0
+0.3,0.7,0
+0.6,0.6,0
+1.0,1.0,1
+0.8,0.9,1
+0.9,0.7,1
+0.85,0.8,1
+0.95,0.9,1
+0.7,0.9,1
 ```
-Training Data:
-┌───────┬───────┬──────────┐
-│  x₁   │  x₂   │  Output  │
-├───────┼───────┼──────────┤
-│  0    │  0    │    0     │
-│  0    │  1    │    0     │
-│  1    │  0    │    0     │
-│  1    │  1    │    1     │
-└───────┴───────┴──────────┘
 
-After Training:
-Weights: [0.7, 0.7]
-Bias: -1.0
+The labels follow `x1 + x2 >= ~1.5`. On binary inputs this behaves exactly like
+AND, and on continuous inputs it stays linearly separable.
 
-Test: All examples classified correctly ✓
+**A trap worth avoiding:** it is tempting to label this dataset with the rule
+"output 1 when both inputs are at least 0.5". That rule is *not* linearly
+separable. It describes a square corner in input space, and a corner needs two
+lines. You can see the contradiction directly in the data: `[0.5, 0.5]` would be
+labelled 1 while `[0.2, 0.8]` would be labelled 0, yet both have the same sum, so
+no line `w1·x1 + w2·x2 + b = 0` can put them on opposite sides. Training on such
+a dataset never converges, no matter how many epochs you allow.
+
+Typical result with the corrected labels: 13 epochs, 100% on the test set.
+
+### Example 3: Threshold Sum with 3 Inputs
+
+`data/threshold_sum_train.csv`
+```csv
+x1,x2,x3,label
+0.0,0.0,0.0,0
+1.0,0.0,0.0,0
+0.0,1.0,0.0,0
+0.0,0.0,1.0,0
+1.0,1.0,0.0,1
+1.0,0.0,1.0,1
+0.0,1.0,1.0,1
+1.0,1.0,1.0,1
+0.5,0.5,0.5,0
+0.8,0.4,0.5,1
+0.3,0.6,0.3,0
+0.6,0.7,0.4,1
+0.2,0.3,0.4,0
+0.9,0.8,0.1,1
 ```
 
-### Example 3: Custom Classification
+The rule is `sum(inputs) > 1.5`, which in three dimensions is a plane. This is
+the easiest of the three for a perceptron because the target rule matches
+exactly what the architecture can express. It usually converges in 4 epochs.
+
+### Running Them
+
+```bash
+python main.py
+```
+
+Output ends with a summary:
 
 ```
-Problem: Classify if sum of inputs > 1.5
-
-Training Data (3 inputs):
-┌──────┬──────┬──────┬──────────┬────────┐
-│  x₁  │  x₂  │  x₃  │   Sum    │ Output │
-├──────┼──────┼──────┼──────────┼────────┤
-│  0   │  0   │  0   │   0.0    │   0    │
-│  1   │  0   │  0   │   1.0    │   0    │
-│  0   │  1   │  0   │   1.0    │   0    │
-│  1   │  1   │  0   │   2.0    │   1    │
-│  1   │  0   │  1   │   2.0    │   1    │
-│  0   │  1   │  1   │   2.0    │   1    │
-│  1   │  1   │  1   │   3.0    │   1    │
-└──────┴──────┴──────┴──────────┴────────┘
-
-Perceptron learns to classify correctly!
+============================================================
+Summary
+============================================================
+  OR Gate              100.00%
+  AND Gate             100.00%
+  Threshold Sum        100.00%
 ```
 
 ---
@@ -437,16 +507,25 @@ These limitations are addressed by multi-layer networks (covered in Lesson 5).
 
 **Try the implementation:**
 1. Navigate to `/perceptron` directory
-2. Open `main.py` to see examples
-3. Run the code: `python main.py`
-4. Modify training data to experiment
-5. Try creating your own classification problems
+2. Run the code: `python main.py`
+3. Open `data/` to see the datasets
+4. Edit a CSV and re-run, no Python changes needed
+5. Add your own train/test pair and wire it up with one `run_example` call
 
 **Exercises:**
-1. Train a perceptron for a NAND gate
-2. Create a perceptron for: output 1 if x₁ > 0.5, else 0
+1. Write `data/nand_gate_train.csv` and `data/nand_gate_test.csv`, then train on them
+2. Create a dataset for: output 1 if x₁ > 0.5, else 0
 3. Experiment with different learning rates (0.01, 0.1, 1.0)
-4. Try to train on XOR - observe that it fails
+4. Write an XOR dataset and watch training fail to converge:
+   ```csv
+   x1,x2,label
+   0.0,0.0,0
+   0.0,1.0,1
+   1.0,0.0,1
+   1.0,1.0,0
+   ```
+   The error count will bounce around forever instead of reaching zero, and
+   accuracy tops out at 75%. This is the limitation that Lesson 5 resolves.
 
 ---
 
@@ -464,6 +543,11 @@ A: Start with 0.1. Too high = unstable, too low = slow learning.
 **Q: Why use bias instead of just adjusting weights?**  
 A: Bias allows the boundary to shift away from the origin.
 
+**Q: How do I know whether my dataset is linearly separable?**  
+A: In 2D, plot the points and try to draw one straight line separating the
+classes. A quick warning sign in the data itself: two examples with the same
+weighted sum but different labels can never be separated by a line.
+
 ---
 
 ## Next Steps
@@ -473,11 +557,10 @@ Proceed to **[Lesson 3: Understanding Parameters](03_parameters.md)** to learn a
 
 **Deepen Understanding:**  
 - Read the [full perceptron implementation](../perceptron/perceptron.py)
-- Study the [training algorithm code](../perceptron/main.py)
+- Study the [example runner](../perceptron/main.py) and the [CSV loader](../perceptron/data_loader.py)
 - Draw your own diagrams of perceptron computation
 
 **Explore Further:**
 - Research: Perceptron convergence theorem
 - Read: Original perceptron paper (Rosenblatt, 1958)
 - Experiment: Build a perceptron in your favorite language
-
